@@ -6,22 +6,22 @@ defmodule Drab.Store do
 
   use GenServer
 
-  def start_link(store) do
-    GenServer.start_link(__MODULE__, store)
+  def start_link(commander_and_store) do
+    GenServer.start_link(__MODULE__, commander_and_store)
   end
 
   @doc false
-  def handle_cast({:put_store, key, value}, store) do
-    {:noreply, Map.merge(store, %{key => value})}
+  def handle_cast({:put_store, key, value}, {commander, store}) do
+    {:noreply, {commander, Map.merge(store, %{key => value})}}
   end
 
   @doc false
-  def handle_call(:get_store, _from, store) do
-    {:reply, store, store}
+  def handle_call(:get_store, _from, {commander, store}) do
+    {:reply, store, {commander, store}}
   end
 
   @doc false
-  def handle_call({:get_store, key}, _from, store) do
-    {:reply, store[key], store}
+  def handle_call({:get_store, key}, _from, {commander, store}) do
+    {:reply, store[key], {commander, store}}
   end
 end
