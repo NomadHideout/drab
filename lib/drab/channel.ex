@@ -8,7 +8,7 @@ defmodule Drab.Channel do
     # socket already contains controller and action
     socket_with_path = socket |> assign(:url_path, url_path)
 
-    {:ok, pid} = Drab.start_link(socket_with_path)
+    {:ok, pid} = Drab.start_link(%Drab.Store{commander: Drab.commander(socket)})
     socket_with_pid = assign(socket_with_path, :drab_pid, pid)
 
     # {:ok, pid} = Drab.Store.start_link(%{})
@@ -70,6 +70,7 @@ defmodule Drab.Channel do
         socket_with_store = assign(socket, :drab_store, drab_store)
         p = [message, socket_with_store] ++ params
         GenServer.cast(socket.assigns.drab_pid, List.to_tuple(p))
+        
         {:noreply, socket_with_store}
       {:error, reason} -> 
         raise "Can't verify the token, #{inspect(reason)}" # let it die

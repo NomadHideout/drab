@@ -82,8 +82,8 @@ defmodule Drab.Core do
       uid = get_store(socket, :user_id)
   """
   def get_store(socket, key) do
-    socket.assigns.drab_store[key]
-    # Drab.Store.get(socket.assigns.store_pid, key)
+    # socket.assigns.drab_store[key]
+    GenServer.call(socket.assigns.drab_pid, {:get_store, key})
   end
 
   @doc """
@@ -101,8 +101,8 @@ defmodule Drab.Core do
       put_store(socket, :counter, 1)
   """
   def put_store(socket, key, value) do
-    store = socket.assigns.drab_store
-    Phoenix.Socket.assign(socket, :drab_store, Map.merge(store, %{key => value}))
-    # Drab.Store.set(socket.assigns.store_pid, key, value)
+    # store = socket.assigns.drab_store
+    # Phoenix.Socket.assign(socket, :drab_store, Map.merge(store, %{key => value}))
+    GenServer.cast(socket.assigns.drab_pid, {:put_store, key, value})
   end
 end

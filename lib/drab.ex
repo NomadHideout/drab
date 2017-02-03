@@ -55,27 +55,27 @@ defmodule Drab do
   use GenServer
 
   @doc false
-  def start_link(socket) do
-    GenServer.start_link(__MODULE__, socket)
+  def start_link(store) do
+    GenServer.start_link(__MODULE__, store)
   end
 
   @doc false
-  def init(socket) do
-    Process.flag(:trap_exit, true)
-    {:ok, socket}
+  def init(store) do
+    # Process.flag(:trap_exit, true)
+    {:ok, store}
   end
 
-  def terminate({:shutdown, :closed}, socket) do
-    cmdr = commander(socket)
-    ondisconnect = drab_config(cmdr).ondisconnect
-    if ondisconnect do
-      apply(cmdr, ondisconnect, [socket])
-    end
-    :normal
-  end
+  # def terminate({:shutdown, :closed}, store) do
+  #   cmdr = store.commander
+  #   ondisconnect = drab_config(cmdr).ondisconnect
+  #   if ondisconnect do
+  #     apply(cmdr, ondisconnect, [store.store])
+  #   end
+  #   :normal
+  # end
 
   @doc false
-  def handle_cast({:onload, socket}, _) do
+  def handle_cast({:onload, socket}, store) do
     # socket is coming from the first request from the client
     cmdr = commander(socket)
     onload = drab_config(cmdr).onload
@@ -88,11 +88,11 @@ defmodule Drab do
     Phoenix.Channel.push(socket, "event", %{
       drab_store_token: drab_store_token(socket, returned_socket)
     })
-    {:noreply, returned_socket}
+    {:noreply, store}
   end
 
   @doc false
-  def handle_cast({:onconnect, socket}, _) do
+  def handle_cast({:onconnect, socket}, store) do
     cmdr = commander(socket)
     onconnect = drab_config(cmdr).onconnect
     returned_socket = if onconnect do
@@ -103,12 +103,12 @@ defmodule Drab do
     Phoenix.Channel.push(socket, "event", %{
       drab_store_token: drab_store_token(socket, returned_socket)
     })
-    {:noreply, returned_socket}
+    {:noreply, store}
   end
 
   @doc false
   # any other cast is an event handler
-  def handle_cast({_, socket, payload, event_handler_function, reply_to}, _) do
+  def handle_cast({_, socket, payload, event_handler_function, reply_to}, store) do
     commander_module = commander(socket)
 
     # raise a friendly exception when misspelled the function handler name
@@ -133,29 +133,20 @@ defmodule Drab do
       })
     end
 
-    {:noreply, socket}
+    {:noreply, store}
   end
 
   @doc false
-  def handle_cast({:put_socket, socket}, _) do
-    {:noreply, socket}
+  def handle_cast({:put_store, key, value}, store) do
+    updated_store = Map.merge(store.store, %{key => value})
+    {:noreply, %Drab.Store{store | store: updated_store}}
+    # {:noreply, store}
   end
 
   @doc false
-  def handle_call(:get_socket, _from, socket) do
-    {:reply, socket, socket}
+  def handle_call({:get_store, key}, _from, store) do
+    {:reply, store.store[key], store}
   end
-
-  @doc false
-  def get_socket(pid) do
-    GenServer.call(pid, :get_socket)
-  end
-
-  @doc false
-  def set_socket(pid, socket) do
-    GenServer.cast(pid, {:put_socket, socket})
-  end
-
 
   defp drab_store_token(socket, returned_socket) do
     # check if the handler return socket, if not - ignore
