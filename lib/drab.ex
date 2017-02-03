@@ -136,18 +136,6 @@ defmodule Drab do
     {:noreply, store}
   end
 
-  @doc false
-  def handle_cast({:put_store, key, value}, store) do
-    updated_store = Map.merge(store.store, %{key => value})
-    {:noreply, %Drab.Store{store | store: updated_store}}
-    # {:noreply, store}
-  end
-
-  @doc false
-  def handle_call({:get_store, key}, _from, store) do
-    {:reply, store.store[key], store}
-  end
-
   defp drab_store_token(socket, returned_socket) do
     # check if the handler return socket, if not - ignore
     # TODO: change the warning to exception

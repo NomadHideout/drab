@@ -77,13 +77,20 @@ defmodule Drab.Core do
   def encode_js(value), do: Poison.encode!(value)
 
   @doc """
+  Returns the whole store as a map
+  """
+  def get_store(socket) do
+    GenServer.call(socket.assigns.store_pid, :get_store)
+  end
+
+  @doc """
   Returns the value of the Drab store represented by the given key.
 
       uid = get_store(socket, :user_id)
   """
   def get_store(socket, key) do
     # socket.assigns.drab_store[key]
-    GenServer.call(socket.assigns.drab_pid, {:get_store, key})
+    GenServer.call(socket.assigns.store_pid, {:get_store, key})
   end
 
   @doc """
@@ -103,6 +110,6 @@ defmodule Drab.Core do
   def put_store(socket, key, value) do
     # store = socket.assigns.drab_store
     # Phoenix.Socket.assign(socket, :drab_store, Map.merge(store, %{key => value}))
-    GenServer.cast(socket.assigns.drab_pid, {:put_store, key, value})
+    GenServer.cast(socket.assigns.store_pid, {:put_store, key, value})
   end
 end

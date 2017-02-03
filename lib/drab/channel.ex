@@ -8,17 +8,13 @@ defmodule Drab.Channel do
     # socket already contains controller and action
     socket_with_path = socket |> assign(:url_path, url_path)
 
-    {:ok, pid} = Drab.start_link(%Drab.Store{commander: Drab.commander(socket)})
-    socket_with_pid = assign(socket_with_path, :drab_pid, pid)
+    {:ok, store_pid} = Drab.Store.start_link(%{})
+    socket_with_pid = assign(socket_with_path, :store_pid, store_pid)
 
-    # {:ok, pid} = Drab.Store.start_link(%{})
-    # socket_with_pids = assign(socket_with_pid, :store_pid, pid)
+    {:ok, pid} = Drab.start_link(%Drab.Store{commander: Drab.commander(socket), store_pid: store_pid})
+    socket_with_pids = assign(socket_with_pid, :drab_pid, pid)
 
-    # Drab.set_socket(pid, socket_with_pid)
-    # # run the process which waits for shutdown (to handle ondisconnect)
-    # Drab.commander(socket).__drab_closing_waiter__(socket_with_pid)
-
-    {:ok, socket_with_pid}
+    {:ok, socket_with_pids}
   end
 
   def handle_in("execjs", %{"ok" => [sender_encrypted, reply]}, socket) do
@@ -70,7 +66,7 @@ defmodule Drab.Channel do
         socket_with_store = assign(socket, :drab_store, drab_store)
         p = [message, socket_with_store] ++ params
         GenServer.cast(socket.assigns.drab_pid, List.to_tuple(p))
-        
+
         {:noreply, socket_with_store}
       {:error, reason} -> 
         raise "Can't verify the token, #{inspect(reason)}" # let it die
