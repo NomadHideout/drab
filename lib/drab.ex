@@ -61,13 +61,17 @@ defmodule Drab do
 
   @doc false
   def init(socket) do
-    # Drab Closing Waiter handles disconnects, when websocket dies
-    # TODO: learn about GenServer init. I set up :drab_pid here and in Drab.Channel.join
-    # I set up it here because it need to exists before join...???
-    # socket_with_my_pid = Phoenix.Socket.assign(socket, :drab_pid, self())
-    # commander(socket).__drab_closing_waiter__(socket_with_my_pid)
-    # {:ok, socket_with_my_pid}
+    Process.flag(:trap_exit, true)
     {:ok, socket}
+  end
+
+  def terminate({:shutdown, :closed}, socket) do
+    cmdr = commander(socket)
+    ondisconnect = drab_config(cmdr).ondisconnect
+    if ondisconnect do
+      apply(cmdr, ondisconnect, [socket])
+    end
+    :normal
   end
 
   @doc false
@@ -80,6 +84,7 @@ defmodule Drab do
     else
       socket
     end
+    Logger.debug("onload returned socket: #{returned_socket |> inspect}")
     Phoenix.Channel.push(socket, "event", %{
       drab_store_token: drab_store_token(socket, returned_socket)
     })
@@ -104,10 +109,6 @@ defmodule Drab do
   @doc false
   # any other cast is an event handler
   def handle_cast({_, socket, payload, event_handler_function, reply_to}, _) do
-    do_handle_cast(socket, event_handler_function, payload, reply_to)
-  end
-
-  defp do_handle_cast(socket, event_handler_function, payload, reply_to) do
     commander_module = commander(socket)
 
     # raise a friendly exception when misspelled the function handler name
@@ -131,7 +132,18 @@ defmodule Drab do
         drab_store_token: drab_store_token(socket, returned_socket)
       })
     end
+
     {:noreply, socket}
+  end
+
+  @doc false
+  def handle_cast({:put_socket, socket}, _) do
+    {:noreply, socket}
+  end
+
+  @doc false
+  def handle_call(:get_socket, _from, socket) do
+    {:reply, socket, socket}
   end
 
   @doc false
@@ -140,9 +152,10 @@ defmodule Drab do
   end
 
   @doc false
-  def handle_call(:get_socket, _from, socket) do
-    {:reply, socket, socket}
+  def set_socket(pid, socket) do
+    GenServer.cast(pid, {:put_socket, socket})
   end
+
 
   defp drab_store_token(socket, returned_socket) do
     # check if the handler return socket, if not - ignore

@@ -83,6 +83,7 @@ defmodule Drab.Core do
   """
   def get_store(socket, key) do
     socket.assigns.drab_store[key]
+    # Drab.Store.get(socket.assigns.store_pid, key)
   end
 
   @doc """
@@ -102,5 +103,6 @@ defmodule Drab.Core do
   def put_store(socket, key, value) do
     store = socket.assigns.drab_store
     Phoenix.Socket.assign(socket, :drab_store, Map.merge(store, %{key => value}))
+    # Drab.Store.set(socket.assigns.store_pid, key, value)
   end
 end

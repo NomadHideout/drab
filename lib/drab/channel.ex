@@ -11,7 +11,12 @@ defmodule Drab.Channel do
     {:ok, pid} = Drab.start_link(socket_with_path)
     socket_with_pid = assign(socket_with_path, :drab_pid, pid)
 
-    Drab.commander(socket).__drab_closing_waiter__(socket_with_pid)
+    # {:ok, pid} = Drab.Store.start_link(%{})
+    # socket_with_pids = assign(socket_with_pid, :store_pid, pid)
+
+    # Drab.set_socket(pid, socket_with_pid)
+    # # run the process which waits for shutdown (to handle ondisconnect)
+    # Drab.commander(socket).__drab_closing_waiter__(socket_with_pid)
 
     {:ok, socket_with_pid}
   end
@@ -67,7 +72,7 @@ defmodule Drab.Channel do
         GenServer.cast(socket.assigns.drab_pid, List.to_tuple(p))
         {:noreply, socket_with_store}
       {:error, reason} -> 
-        raise "Can't verify the token: #{inspect(reason)}" # let it die
+        raise "Can't verify the token, #{inspect(reason)}" # let it die
     end    
   end
 

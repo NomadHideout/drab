@@ -115,13 +115,14 @@ defmodule Drab.Commander do
       def __drab_closing_waiter__(socket) do
         if __drab__().ondisconnect do
           # Logger.debug("Closing waiter: #{socket|>inspect}")
-          socket_for_this_moment = Drab.get_socket(socket.assigns.drab_pid)
-          Logger.debug("Socket get from Drab in closing waiter: #{socket_for_this_moment |> inspect}")
           spawn_link fn ->
             Process.flag(:trap_exit, true)
             receive do
               {:EXIT, _pid, {:shutdown, :closed}} -> 
-              # {:EXIT, _pid, _reason} -> 
+                Logger.debug(inspect(socket.assigns.drab_pid))
+                Logger.debug(inspect(Process.alive?(socket.assigns.drab_pid)))
+                # socket_for_this_moment = Drab.get_socket(socket.assigns.drab_pid)
+                # Logger.debug("Socket get from Drab in closing waiter: #{socket_for_this_moment |> inspect}")
                 # Launch ondisconnect event
                 apply(__drab__().commander, __drab__().ondisconnect, [socket])
                 exit(:normal)
